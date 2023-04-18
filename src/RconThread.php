@@ -95,14 +95,19 @@ class RconThread extends Thread{
 	private function readPacket(\Socket $client, ?int &$requestID, ?int &$packetType, ?string &$payload) : bool{
 		$d = @socket_read($client, 4);
 
-		socket_getpeername($client, $ip, $port);
 		if($d === false){
 			$err = socket_last_error($client);
 			if($err !== SOCKET_ECONNRESET){
+				socket_getpeername($client, $ip, $port);
+
 				$this->logger->debug("Connection error with $ip $port: " . trim(socket_strerror($err)));
 			}
 			return false;
 		}
+
+		socket_getpeername($client, $ip, $port);
+
+
 		if(strlen($d) !== 4){
 			if($d !== ""){ //empty data is returned on disconnection
 				$this->logger->debug("Truncated packet from $ip $port (want 4 bytes, have " . strlen($d) . "), disconnecting");
@@ -238,13 +243,13 @@ class RconThread extends Thread{
 	}
 
 	private function disconnectClient(\Socket $client) : void{
-		socket_getpeername($client, $ip, $port);
+		// socket_getpeername($client, $ip, $port);
 		@socket_set_option($client, SOL_SOCKET, SO_LINGER, ["l_onoff" => 1, "l_linger" => 1]);
 		@socket_shutdown($client, 2);
 		@socket_set_block($client);
 		@socket_read($client, 1);
 		@socket_close($client);
-		$this->logger->info("Disconnected client: /$ip:$port");
+		// $this->logger->info("Disconnected client: /$ip:$port");
 	}
 
 	public function getThreadName() : string{
